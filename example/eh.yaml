@@ -1,0 +1,91 @@
+selectors:
+  - id: count
+    selector: p.ip
+    regex:
+      from: \D
+      flags: g
+      replace: ""
+    valueType: int
+  - id: currentPage
+    selector: td.ptds a
+    valueType: int
+  - id: displayMode
+    type: element
+    selector: "#dms option[selected]"
+    children:
+      - id: name
+      - id: value
+        attribute: value
+  - id: wrapper
+    type: element
+    multiple: true
+    selector: table.itg tr, div.itg > .gl1t
+
+  - id: category
+    parents: wrapper
+    selector: .cn, .cs
+
+  - id: title
+    required: true
+    parents: wrapper
+    selector: .glink
+
+  - id: href
+    required: true
+    parents: wrapper
+    selector: .gl1e a, .glname a, .gl1t > a
+    attribute: href
+
+  - id: cover
+    parents: wrapper
+    selector: .glthumb img
+    attribute: data-src
+
+  - id: cover
+    parents: wrapper
+    selector: .gl1e a img, .gl1t .gl3t a img
+    attribute: src
+
+  - id: hasTorrents
+    parents: wrapper
+    attribute: src
+    selector: .gldown img
+    regex: \/t\.png
+    valueType: bool
+
+  - id: tags
+    parents: wrapper
+    multiple: true
+    selector: .gt, .gtl, gtw
+    attribute: title
+
+  - id: ratings
+    parents: wrapper
+    selector: .ir
+    attribute: style
+    regex:
+      from: background-position:-?(\d+)px -(\d+)px;.*
+      replace: $1,$2
+    expression: "( 5 - x.split(',')[0].toInt / 16) - (x.split(',')[1].toInt > 1 ? 0.5 : 0)"
+
+  - id: uploader
+    type: element
+    parents: wrapper
+    selector: .gl4c a, .gl5m a, .gl3e .ir + div a
+
+  - id: name
+    parents: uploader
+
+  - id: href
+    parents: uploader
+    attribute: href
+
+  - id: pages
+    parents: wrapper
+    selector: .gl4c div:nth-child(2), .glthumb > div:nth-child(2) > div:nth-child(2) > div:nth-child(2), td.gl2e > div > div > div:nth-child(5), .gl5t .ir + div
+    regex: \d+
+    valueType: int
+
+  - id: date
+    parents: wrapper
+    selector: "[id^='posted_'] , .gl3e .cn + div, .gl5t .cs + div, .gl2m .glthumb + div"

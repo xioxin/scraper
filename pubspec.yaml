@@ -1,0 +1,20 @@
+name: scraper
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# homepage: https://www.example.com
+
+environment:
+  sdk: '>=2.14.2 <3.0.0'
+
+dependencies:
+  universal_html: ^2.0.8
+  json_annotation: ^4.1.0
+  expressions: ^0.2.3
+  yaml: ^3.1.0
+
+dev_dependencies:
+  lints: ^1.0.0
+  dio: ^4.0.0
+  build_runner: ^2.0.0
+  json_serializable: ^5.0.0
+  path: ^1.8.0
