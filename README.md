@@ -1,39 +1,34 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+## Rule
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```
+selectors:
+  - id: ratings
+    parents: wrapper
+    selector: .ir
+    attribute: style
+    regex:
+      from: background-position:-?(\d+)px -(\d+)px;.*
+      replace: $1,$2
+    expression: "( 5 - x.split(',')[0].toInt / 16) - (x.split(',')[1].toInt > 1 ? 0.5 : 0)"
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
 ```dart
-const like = 'sample';
+void main() async {
+  final http = getHttpClient();
+
+  var fileUri = Uri.file(Platform.script.toFilePath()).resolve('./eh.yaml');
+  final ruleFile = File(fileUri.toFilePath());
+  final List<Selector> rule = loadScraperYaml(ruleFile.readAsStringSync())!;
+
+  final response = await http.get('https://e-hentai.org/');
+
+  final controller = WindowController()
+    ..openContent(response.data as String);
+
+  final data = rule.parse(controller.window!.document.documentElement!);
+
+  print(data);
+}
 ```
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.

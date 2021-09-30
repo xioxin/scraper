@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
-import 'package:path/path.dart' as p;
 import 'package:scraper/scraper.dart';
 import 'package:universal_html/controller.dart';
 
