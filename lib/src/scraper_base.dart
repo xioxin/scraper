@@ -1,37 +1,45 @@
 import 'package:expressions/expressions.dart';
+import 'package:universal_html/controller.dart';
 import 'package:universal_html/html.dart';
 import 'package:yaml/yaml.dart';
 import 'scraper_model.dart';
 
-List<Selector>? loadScraperYaml(String yaml) {
-  final data = loadYaml(yaml);
-  List<Selector>? selectors;
-  if (data is Map && data.containsKey('selectors')) {
-    final selectorsJson = data['selectors'];
-    if (selectorsJson is List) {
-      selectors = selectorsJson
-          .map((json) {
-            return Selector.fromJson(Map<String, dynamic>.from(json));
-          })
-          .whereType<Selector>()
-          .toList();
+class Scraper {
+  List<Selector> rules = [];
+
+  final controller = WindowController();
+
+  loadRulesYaml(String yaml) {
+    final data = loadYaml(yaml);
+    if (data is Map && data.containsKey('selectors')) {
+      final selectorsJson = data['selectors'];
+      if (selectorsJson is List) {
+        rules = selectorsJson
+            .map((json) {
+          return Selector.fromJson(Map<String, dynamic>.from(json));
+        })
+            .whereType<Selector>()
+            .toList();
+        return;
+      }
     }
   }
-  return selectors;
-}
 
+  loadContent(String html) {
+    controller.openContent(html);
+  }
 
-extension SelectorList on List<Selector> {
   List<Selector> _getSubSelector(Selector selector) {
     return [
       ...selector.children ?? [],
-      ...where((element) => element.parents?.contains(selector.id) ?? false)
+      ...rules.where((element) => element.parents?.contains(selector.id) ?? false)
     ];
   }
 
-  Map<String, dynamic> parse(Element rootElement, {String? rootId, List<Selector>? selectorList}) {
+  Map<String, dynamic> parse({Element? rootElement, String? rootId, List<Selector>? selectorList}) {
+    rootElement ??= controller.window!.document.documentElement!;
     Map<String, dynamic> data = {};
-    selectorList ??= where((item) => rootId == null
+    selectorList ??= rules.where((item) => rootId == null
         ? item.parents == null
         : (item.parents?.contains(rootId) ?? false)).toList();
     for (var selector in selectorList) {
@@ -55,7 +63,7 @@ extension SelectorList on List<Selector> {
       case SelectorType.element:
         {
           list = elements.map((element) {
-            return parse(element, selectorList: _getSubSelector(selector));
+            return parse(rootElement: element, selectorList: _getSubSelector(selector));
           }).toList();
           final subRequiredFields = _getSubSelector(selector).where((field) => field.required);
           if (subRequiredFields.isNotEmpty) {
@@ -97,7 +105,7 @@ extension SelectorList on List<Selector> {
       switch (selector.autoType) {
         case SelectorType.element:
           {
-            final subData = parse(element, selectorList: _getSubSelector(selector));
+            final subData = parse(rootElement: element, selectorList: _getSubSelector(selector));
             final subRequiredFields = _getSubSelector(selector).where((field) => field.required);
             if (subRequiredFields.every((field) => subData[field.id] != null)) {
               value = subData;
@@ -189,6 +197,7 @@ extension SelectorList on List<Selector> {
       final context = {
         'x': value,
         'value': value,
+        ...expressionFunctions,
         ...selfContext,
         ...(selector.expressionContext ?? {})
       };
@@ -199,6 +208,14 @@ extension SelectorList on List<Selector> {
     }
     return value;
   }
+
+  Map<String, dynamic> get expressionFunctions {
+    return {
+      "document": controller.window!.document,
+    };
+  }
+
+
 }
 
 class SelectorEvaluator extends ExpressionEvaluator {
