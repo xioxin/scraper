@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/adapter.dart';
@@ -21,9 +22,24 @@ void main() async {
     ..openContent(response.data as String);
 
   final data = rule.parse(controller.window!.document.documentElement!);
-
-  print(data);
+  print(JsonEncoder.withIndent('  ').convert(data));
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Dio getHttpClient() {
   final dio = Dio();

@@ -142,7 +142,14 @@ extension SelectorList on List<Selector> {
             unicode: unicode,
             dotAll: dotAll);
         if (regex.replace == null) {
+          final match = pattern.firstMatch(value);
           value = pattern.stringMatch(value);
+          if(match != null) {
+            for (int i = 0; i <= match.groupCount; i++) {
+              final value = match.group(i);
+              expressionRegexContext[r'$' + i.toString()] ??= value ?? '';
+            }
+          }
         } else {
           value = value.replaceAllMapped(pattern, (Match match) {
             String text = regex.replace!;

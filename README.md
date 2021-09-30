@@ -6,10 +6,8 @@ selectors:
     parents: wrapper
     selector: .ir
     attribute: style
-    regex:
-      from: background-position:-?(\d+)px -(\d+)px;.*
-      replace: $1,$2
-    expression: "( 5 - x.split(',')[0].toInt / 16) - (x.split(',')[1].toInt > 1 ? 0.5 : 0)"
+    regex: background-position:-?(\d+)px -(\d+)px;.*
+    expression: "( 5 - $1.toInt / 16) - ($2.toInt > 1 ? 0.5 : 0)"
 ```
 
 查看完整规则： <https://github.com/xioxin/scraper/blob/main/example/eh.yaml>
