@@ -122,6 +122,7 @@ extension SelectorList on List<Selector> {
       }
     }
 
+    Map<String, dynamic> expressionRegexContext = {};
     if (value is String) {
       if (selector.regex != null) {
         final regex = selector.regex!;
@@ -140,15 +141,16 @@ extension SelectorList on List<Selector> {
             caseSensitive: caseSensitive,
             unicode: unicode,
             dotAll: dotAll);
-
         if (regex.replace == null) {
           value = pattern.stringMatch(value);
         } else {
           value = value.replaceAllMapped(pattern, (Match match) {
             String text = regex.replace!;
             for (int i = 0; i <= match.groupCount; i++) {
+              final value = match.group(i);
+              expressionRegexContext[r'$' + i.toString()] ??= value ?? '';
               final reg = RegExp(r'\$' + i.toString());
-              text = text.replaceAll(reg, match.group(i) ?? '');
+              text = text.replaceAll(reg, value ?? '');
             }
             return text;
           });
@@ -167,11 +169,11 @@ extension SelectorList on List<Selector> {
       if (value is String) value = value.trim() != '';
     }
 
-    value = _expression(value, selector);
+    value = _expression(value, selector, expressionRegexContext);
     return value;
   }
 
-  dynamic _expression(dynamic value, Selector selector) {
+  dynamic _expression(dynamic value, Selector selector, [Map<String, dynamic> selfContext = const {}]) {
     if (selector.expression == null) {
       return value;
     }
@@ -180,6 +182,7 @@ extension SelectorList on List<Selector> {
       final context = {
         'x': value,
         'value': value,
+        ...selfContext,
         ...(selector.expressionContext ?? {})
       };
       final evaluator = const SelectorEvaluator();
@@ -207,6 +210,12 @@ class SelectorEvaluator extends ExpressionEvaluator {
       }
       if (expression.property.name == 'toDouble') {
         return double.tryParse(object);
+      }
+    }
+
+    if(object is List) {
+      if (expression.property.name == 'join') {
+        return object.join;
       }
     }
   }
