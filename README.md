@@ -25,7 +25,7 @@ selectors:
 | valueType | "string" \| "bool" \| "int" \| "decimal" \| null | 默认为字符串。|
 | expression | String | 表达式，类似于js、dart的语法 |
 | expressionContext | Map<String, any> | 字典，表达式执行是可以获取这里的参数作为变量|
-| children | List<Self> | 子字段，适合简单。建议使用 parents |
+| children | List<Self> | 子字段。复杂的建议使用 parents |
 
 
 ## Expression
