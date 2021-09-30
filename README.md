@@ -11,6 +11,9 @@ selectors:
       replace: $1,$2
     expression: "( 5 - x.split(',')[0].toInt / 16) - (x.split(',')[1].toInt > 1 ? 0.5 : 0)"
 ```
+
+查看完整规则： <https://github.com/xioxin/scraper/blob/main/example/eh.yaml>
+
 | key    | type |  describe |
 | :----- | :-- |  :---- |
 | id | String | 输出字典时的key，配合parents确认子父级关系 |
@@ -27,6 +30,7 @@ selectors:
 | expressionContext | Map<String, any> | 字典，表达式执行是可以获取这里的参数作为变量|
 | children | List<Self> | 子字段。复杂的建议使用 parents |
 
+  
 
 ## Expression
 
@@ -53,3 +57,6 @@ void main() async {
   print(data);
 }
 ```
+  
+![image](https://user-images.githubusercontent.com/5716100/135469425-baf27b78-c308-4d99-bacd-9f2ca5981df0.png)
+
