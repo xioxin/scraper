@@ -1,10 +1,20 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:collection/collection.dart';
+
 part 'scraper_model.g.dart';
+
+// dart run build_runner build
+enum RuleDataType {
+  html,
+  json,
+}
 
 enum SelectorType {
   element,
   text,
+  html,
   attribute,
+  json,
 }
 enum SelectorDataType {
   string,
@@ -18,6 +28,19 @@ class SelectorRegex {
   final String from;
   final String? replace;
   final String? flags;
+
+  bool get multiLine => flags?.toLowerCase().contains('m') ?? false;
+  bool get caseSensitive => !(flags?.toLowerCase().contains('i') ?? false);
+  bool get dotAll => flags?.toLowerCase().contains('g') ?? false;
+  bool get unicode => flags?.toLowerCase().contains('u') ?? false;
+
+  RegExp get pattern {
+    return RegExp(from,
+        multiLine: multiLine,
+        caseSensitive: caseSensitive,
+        unicode: unicode,
+        dotAll: dotAll);
+  }
 
   SelectorRegex(this.from, {this.replace, this.flags});
 
@@ -49,10 +72,17 @@ class Selector {
     return SelectorRegex.fromJson(Map<String, dynamic>.from(value));
   }
 
-  static List<Selector>? _decodeChildren(dynamic value) {
+  static List<SelectorRegex> _decodeRegexList(dynamic value) {
+    if (value is String) return [SelectorRegex(value)];
+    if (value is List) {
+      return value.map((e) => _decodeRegex(e)).whereNotNull().toList();
+    }
+    return [];
+  }
 
+  static List<Selector>? _decodeChildren(dynamic value) {
     if (value == null) return null;
-    if (value is List){
+    if (value is List) {
       return value
           .map((e) => Selector.fromJson(Map<String, dynamic>.from(e)))
           .toList();
@@ -60,11 +90,15 @@ class Selector {
   }
 
   final String id;
+  final String? mapKey;
+  String get key => mapKey ?? id;
   final SelectorType? type;
 
   SelectorType get autoType {
-    if(type != null) return type!;
-    if(attribute != null) return SelectorType.attribute;
+    if (type != null) return type!;
+    if (jsonAt != null) return SelectorType.json;
+    if (attribute != null) return SelectorType.attribute;
+    if (children != null) return SelectorType.element;
     return SelectorType.text;
   }
 
@@ -85,10 +119,13 @@ class Selector {
   final String? expression;
   final Map<String, dynamic>? expressionContext;
   final SelectorDataType? valueType;
+  final String? jsonAt;
 
   Selector(
     this.id, {
+    this.mapKey,
     this.type,
+    this.jsonAt,
     this.parents,
     this.multiple = false,
     this.required = false,
@@ -105,4 +142,77 @@ class Selector {
       _$SelectorFromJson(json);
 
   Map<String, dynamic> toJson() => _$SelectorToJson(this);
+
+  @override
+  String toString() {
+    return "Selector<$id>";
+  }
+}
+
+extension ListSelector on List<Selector> {
+  List<Selector> getSubSelector(Selector selector) {
+    final list = <Selector>[
+      ...selector.children ?? [],
+      ...where((element) => element.parents?.contains(selector.id) ?? false)
+    ];
+    return list;
+  }
+}
+
+@JsonSerializable()
+class Site {
+  String host;
+  bool authRequired;
+  String? cookie;
+  Site({required this.host, this.authRequired = false, this.cookie});
+
+  factory Site.fromJson(Map<String, dynamic> json) => _$SiteFromJson(json);
+  Map<String, dynamic> toJson() => _$SiteToJson(this);
+}
+
+@JsonSerializable()
+class Rule {
+  @JsonKey(fromJson: Selector._decodeRegexList)
+  List<SelectorRegex> matches;
+
+  RuleDataType type;
+  String? selectorRoot;
+  List<Selector>? selectors;
+  Rule(
+      {this.matches = const [],
+      this.type = RuleDataType.html,
+      this.selectorRoot,
+      this.selectors});
+
+  factory Rule.fromJson(Map<String, dynamic> json) => _$RuleFromJson(json);
+  Map<String, dynamic> toJson() => _$RuleToJson(this);
+}
+
+@JsonSerializable()
+class Scraper {
+  String name;
+  String description;
+  String version;
+
+  List<Rule> rules;
+  List<Site> sites;
+  List<Selector> selectors;
+
+  List<Selector> getSelectorsFromParent(String id) {
+    return selectors
+        .where((element) => element.parents?.contains(id) ?? false)
+        .toList();
+  }
+
+  Scraper(
+      {required this.name,
+      this.description = '',
+      this.version = '',
+      this.rules = const [],
+      this.sites = const [],
+      this.selectors = const []});
+
+  factory Scraper.fromJson(Map<String, dynamic> json) =>
+      _$ScraperFromJson(json);
+  Map<String, dynamic> toJson() => _$ScraperToJson(this);
 }

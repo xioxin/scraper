@@ -6,22 +6,15 @@ import 'package:dio/dio.dart';
 import 'package:scraper/scraper.dart';
 import 'package:universal_html/controller.dart';
 
-import 'domain_fronting.dart';
+import '../example/domain_fronting.dart';
 import 'package:uri/uri.dart';
 
-void main() async {
-  // final urls = [
-  //   'https://e-hentai.org/',
-  //   'https://e-hentai.org/watched?page=1',
-  //   'https://e-hentai.org/watched',
-  //   'https://e-hentai.org/watched?f_search=l%3Achinese%24+',
-  //   'https://e-hentai.org/watched?f_cats=767&f_search=l%3Achinese%24+',
-  //   'https://e-hentai.org/?f_cats=767&f_search=l%3Achinese%24+',
-  //   'https://e-hentai.org/non-h',
-  //   'https://e-hentai.org/non-h/1',
-  //   'https://e-hentai.org/g/2017168/016bd5f624/',
-  // ];
+// dart bin/scraper.dart https://e-hentai.org/non-h
+// dart bin/scraper.dart https://e-hentai.org/g/2029065/1e6df31ab8/
+// dart bin/scraper.dart https://e-hentai.org/g/2042088/a26bdd9ad0/
 
+
+void main(List<String> arguments) async {
   var fileUri =
       Uri.file(Platform.script.toFilePath()).resolve('../rules/eh.yaml');
   final ruleFile = File(fileUri.toFilePath());
@@ -34,16 +27,10 @@ void main() async {
   });
 
   controller.addYamlRules(ruleFile.readAsStringSync());
-  final parser1 =
-      await controller.loadUri(Uri.parse('https://e-hentai.org/non-h'));
+  final parser = await controller.loadUri(Uri.parse(arguments.first));
 
-  final parser2 = await controller
-      .loadUri(Uri.parse('https://e-hentai.org/g/2029065/1e6df31ab8/'));
-
-  print("=================");
-  print(JsonEncoder.withIndent('  ').convert(parser1.parse()));
-
-  print(JsonEncoder.withIndent('  ').convert(parser2.parse()));
+  print(JsonEncoder.withIndent('  ').convert(parser.parse()));
+  dio.close();
 }
 
 Dio getDio() {

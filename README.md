@@ -1,5 +1,7 @@
 ## Rule
 
+### 结构已经大改 以下内容为上个版本的结构
+
 ```
 selectors:
   - id: ratings
