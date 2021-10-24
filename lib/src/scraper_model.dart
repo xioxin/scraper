@@ -9,19 +9,7 @@ enum RuleDataType {
   json,
 }
 
-enum SelectorType {
-  element,
-  text,
-  html,
-  attribute,
-  json,
-}
-enum SelectorDataType {
-  string,
-  bool,
-  int,
-  decimal,
-}
+enum SelectorType { element, text, html, attribute, json, value }
 
 @JsonSerializable()
 class SelectorRegex {
@@ -96,6 +84,7 @@ class Selector {
 
   SelectorType get autoType {
     if (type != null) return type!;
+    if (value != null) return SelectorType.value;
     if (jsonAt != null) return SelectorType.json;
     if (attribute != null) return SelectorType.attribute;
     if (children != null) return SelectorType.element;
@@ -118,8 +107,9 @@ class Selector {
   final SelectorRegex? regex;
   final String? expression;
   final Map<String, dynamic>? expressionContext;
-  final SelectorDataType? valueType;
   final String? jsonAt;
+
+  final dynamic value;
 
   Selector(
     this.id, {
@@ -129,13 +119,13 @@ class Selector {
     this.parents,
     this.multiple = false,
     this.required = false,
-    this.valueType,
     this.expressionContext,
     this.selector,
     this.attribute,
     this.regex,
     this.expression,
     this.children,
+    this.value,
   });
 
   factory Selector.fromJson(Map<String, dynamic> json) =>
@@ -196,13 +186,8 @@ class Scraper {
 
   List<Rule> rules;
   List<Site> sites;
-  List<Selector> selectors;
 
-  List<Selector> getSelectorsFromParent(String id) {
-    return selectors
-        .where((element) => element.parents?.contains(id) ?? false)
-        .toList();
-  }
+  Map<String, dynamic> constants;
 
   Scraper(
       {required this.name,
@@ -210,7 +195,7 @@ class Scraper {
       this.version = '',
       this.rules = const [],
       this.sites = const [],
-      this.selectors = const []});
+      this.constants = const {}});
 
   factory Scraper.fromJson(Map<String, dynamic> json) =>
       _$ScraperFromJson(json);

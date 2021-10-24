@@ -2,6 +2,32 @@ name: E-Hentai
 description: Parsing rules for an "E-Hentai" website
 version: 1.0.0
 
+constants:
+  nsDic:
+    misc: 'misc'
+    miscellaneous: 'misc'
+    r: 'reclass'
+    reclass: 'reclass'
+    l: 'language'
+    language: 'language'
+    lang: 'language'
+    p: 'parody'
+    parody: 'parody'
+    series: 'parody'
+    c: 'character'
+    char: 'character'
+    character: 'character'
+    g: 'group'
+    group: 'group'
+    creator: 'group'
+    circle: 'group'
+    a: 'artist'
+    artist: 'artist'
+    m: 'male'
+    male: 'male'
+    f: 'female'
+    female: 'female'
+
 sites:
   - host: e-hentai.org
   - host: exhentai.org
@@ -30,7 +56,7 @@ rules:
           - id: name
           - id: value
             attribute: value
-      - id: wrapper
+      - id: items
         type: element
         multiple: true
         selector: table.itg tr, div.itg > .gl1t
@@ -127,20 +153,27 @@ rules:
       - id: length
         selector: "#gdd > table > tbody > tr:nth-child(6) > td.gdt2"
         regex: '([0-9]+)'
-        expression: $1.toInt
+        expression: $1.toInt()
       - id: favcount
         selector: "#favcount"
         regex: '([0-9]+)'
-        expression: $1.toInt
+        expression: $1.toInt()
       - id: rating
         selector: "#rating_label"
         regex: '([0-9\.]+)'
-        expression: $1.toDouble
+        expression: $1.toDouble()
       - id: tags
         multiple: true
         selector: .gt, .gtl, gtw
-        attribute: id #todo 使用表达式 map数据 正则替换掉不需要的内容
-
+        children:
+          - id: raw
+            attribute: id
+            regex: 't[ad]_(.*)'
+            expression: $1
+          - id: namespace
+            expression: "this.raw.contains() ? nsDic[this.raw.split(':')[0]] : 'misc'"
+          - id: key
+            expression: "this.raw.contains(':') ? this.raw.split(':')[1] : this.raw"
       - id: torrent
         selector: "#gd5 > p:nth-child(3) > a"
         attribute: id
@@ -150,6 +183,25 @@ rules:
         selector: "#gdo2 > div.ths.nosel"
       - id: currentPage
         selector: ".ptds"
+      - id: newer
+        selector: "#gnd"
+        children:
+          - id: title
+            multiple: true
+            selector: "a"
+            children:
+              - id: v
+            expression: value.last.v
+          - id: href
+            multiple: true
+            selector: "a"
+            children:
+              - id: v
+                attribute: href
+            expression: value.last.v
+          - id: date
+            regex: 'added ([0-9 -:]*)$'
+            expression: $1.toDateTime()
 
       - id: wrapper
         type: element
@@ -187,8 +239,7 @@ rules:
           expression: 'value == "Uploader Comment"'
         - id: score
           selector: ".c5 span"
-          expression: value.toInt
+          expression: value.toInt()
         - id: content
           type: html
           selector: ".c6"
-          

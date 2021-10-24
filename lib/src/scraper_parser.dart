@@ -4,12 +4,11 @@ import 'dart:io';
 import 'package:expressions/expressions.dart';
 import 'package:universal_html/controller.dart';
 import 'package:universal_html/html.dart';
+import 'package:uri/uri.dart';
 import 'package:yaml/yaml.dart';
+import 'scraper_controller.dart';
 import 'scraper_model.dart';
 import 'package:collection/collection.dart';
-
-typedef ScraperRequestFunc = Future<String> Function(
-    ScraperController controller, Scraper scraper, Uri uri);
 
 class ScraperParser {
   final WindowController windowController = WindowController();
@@ -23,7 +22,7 @@ class ScraperParser {
 
   ScraperParser(this.scraperController, this.scraper, this.rule, this.data,
       {this.variable = const {}}) {
-    selectorList = rule.selectors ?? scraper.selectors;
+    selectorList = rule.selectors ?? [];
     if (rule.type == RuleDataType.html) {
       windowController.openContent(data);
     } else if (rule.type == RuleDataType.json) {
@@ -48,7 +47,6 @@ class ScraperParser {
   Map<String, dynamic> parseJson(
       {Object? inputData, List<Selector>? selectorList, String? rootId}) {
     Map<String, dynamic> data = {};
-
     return data;
   }
 
@@ -64,18 +62,19 @@ class ScraperParser {
       if (selector.multiple) {
         assert(selectors != '');
         final elements = rootElement.querySelectorAll(selectors);
-        data[selector.key] = _parseElementMultiple(elements, selector);
+        data[selector.key] = _parseElementMultiple(elements, selector, data);
       } else {
         Element? element = rootElement;
         if (selectors != '') element = rootElement.querySelector(selectors);
-        data[selector.key] = _parseElementOne(element, selector);
+        data[selector.key] = _parseElementOne(element, selector, data);
       }
     }
     return data;
   }
 
-  dynamic _parseElementMultiple(List<Element> elements, Selector selector) {
-    List<dynamic>? list;
+  dynamic _parseElementMultiple(
+      List<Element> elements, Selector selector, dynamic parentData) {
+    dynamic list;
     assert(selector.autoType != SelectorType.json);
     switch (selector.autoType) {
       case SelectorType.element:
@@ -97,17 +96,12 @@ class ScraperParser {
         }
       case SelectorType.html:
       case SelectorType.text:
-        {
-          list = elements
-              .map((element) => _parseElementOne(element, selector))
-              .toList();
-          break;
-        }
       case SelectorType.attribute:
+      case SelectorType.value:
         {
           assert(selector.attribute != null);
           list = elements
-              .map((element) => _parseElementOne(element, selector))
+              .map((element) => _parseElementOne(element, selector, parentData))
               .toList();
           break;
         }
@@ -121,12 +115,16 @@ class ScraperParser {
     return list;
   }
 
-  dynamic _parseElementOne(Element? element, Selector selector) {
+  dynamic _parseElementOne(
+      Element? element, Selector selector, dynamic parentData) {
     dynamic value;
     if (element == null) {
       value = null;
     } else {
       switch (selector.autoType) {
+        case SelectorType.value:
+          value = selector.value;
+          break;
         case SelectorType.element:
           {
             final subSelectors = selectorList.getSubSelector(selector);
@@ -135,13 +133,15 @@ class ScraperParser {
               value = null;
               break;
             }
-            final subRequiredFields =
-                subSelectors.where((field) => field.required);
-            if (subRequiredFields
-                .every((field) => subData[field.key] != null)) {
-              value = subData;
-            } else {
-              value = null;
+            if (subData is Map) {
+              final subRequiredFields =
+                  subSelectors.where((field) => field.required);
+              if (subRequiredFields
+                  .every((field) => subData[field.key] != null)) {
+                value = subData;
+              } else {
+                value = null;
+              }
             }
             break;
           }
@@ -193,20 +193,9 @@ class ScraperParser {
           });
         }
       }
-      if (selector.valueType == SelectorDataType.decimal) {
-        value = double.tryParse(value);
-      }
-      if (selector.valueType == SelectorDataType.int) {
-        value = int.tryParse(value);
-      }
     }
-
-    if (selector.valueType == SelectorDataType.bool) {
-      value ??= false;
-      if (value is String) value = value.trim() != '';
-    }
-
-    value = _expression(value, selector, expressionRegexContext);
+    value = _expression(
+        value, selector, {...expressionRegexContext, 'this': parentData});
     return value;
   }
 
@@ -235,65 +224,26 @@ class ScraperParser {
   Map<String, dynamic> get expressionFunctions {
     return {
       "document": windowController.window!.document,
+      "RegExp": (String from, [String? flags]) {
+        final multiLine = flags?.toLowerCase().contains('m') ?? false;
+        final caseSensitive = !(flags?.toLowerCase().contains('i') ?? false);
+        final dotAll = flags?.toLowerCase().contains('g') ?? false;
+        final unicode = flags?.toLowerCase().contains('u') ?? false;
+        return RegExp(from,
+            multiLine: multiLine,
+            caseSensitive: caseSensitive,
+            unicode: unicode,
+            dotAll: dotAll);
+      },
+      "UriTemplateExpand": (String uriTemplate, Map<String, Object?> data) {
+        return UriTemplate(uriTemplate).expand(data);
+      },
+      "UriTemplate": (String uriTemplate) {
+        return (Map<String, Object?> data) =>
+            UriTemplate(uriTemplate).expand(data);
+      },
+      ...scraper.constants,
     };
-  }
-}
-
-class ScraperController {
-  ScraperRequestFunc request;
-
-  static Future<String> defaultRequest(
-      ScraperController controller, Scraper scraper, Uri uri) async {
-    final httpClient = HttpClient();
-    try {
-      final request = await httpClient.getUrl(uri);
-      final response = await request.close();
-      var responseBody = await response.transform(Utf8Decoder()).join();
-      httpClient.close();
-      return responseBody;
-    } catch (e) {
-      httpClient.close();
-      rethrow;
-    }
-  }
-
-  ScraperController({this.request = defaultRequest});
-
-  List<Scraper> scraperList = [];
-
-  addYamlRules(String yaml) {
-    var data = loadYaml(yaml);
-    if (data is YamlMap) {
-      data = data.toMap();
-    }
-    addJsonRule(data);
-  }
-
-  addJsonRule(Map<String, dynamic> data) {
-    final scraper = Scraper.fromJson(data);
-    scraperList.removeWhere((item) => item.name == scraper.name);
-    scraperList.add(scraper);
-  }
-
-  Future<ScraperParser> loadUri(Uri uri) async {
-    final scraper = scraperList.firstWhereOrNull((item) =>
-        item.sites.firstWhereOrNull((site) => site.host == uri.host) != null);
-    if (scraper == null) {
-      throw "There are no supported rules. url: ${uri.toString()}";
-    }
-    final rule = scraper.rules.firstWhereOrNull((rule) =>
-        rule.matches.firstWhereOrNull((e) {
-          final url = uri.path + uri.query;
-          return e.pattern.hasMatch(url);
-        }) !=
-        null);
-
-    if (rule == null) {
-      throw "There are no supported rules. url: ${uri.toString()}";
-    }
-
-    final text = await request(this, scraper, uri);
-    return ScraperParser(this, scraper, rule, text);
   }
 }
 
@@ -304,46 +254,57 @@ class SelectorEvaluator extends ExpressionEvaluator {
   dynamic evalMemberExpression(
       MemberExpression expression, Map<String, dynamic> context) {
     var object = eval(expression.object, context);
+    final name = expression.property.name;
+
+    if (object == null) return null;
     if (object is String) {
-      if (expression.property.name == 'split') {
-        return object.split;
-      }
-      if (expression.property.name == 'toInt') {
-        return int.tryParse(object);
-      }
-      if (expression.property.name == 'toDouble') {
-        return double.tryParse(object);
-      }
+      if (name == 'split') return object.split;
+      if (name == 'trim') return object.trim;
+      if (name == 'contains') return object.contains;
+      if (name == 'toInt') return () => int.tryParse(object);
+      if (name == 'toDouble') return () => double.tryParse(object);
+      if (name == 'toBool') return () => object.trim() != '';
+      if (name == 'isEmpty') return object.isEmpty;
+      if (name == 'isNotEmpty') return object.isNotEmpty;
+      if (name == 'length') return () => object.length;
+      if (name == 'toDataTime') return () => DateTime.parse(object);
     }
 
     if (object is List) {
-      if (expression.property.name == 'join') {
-        return object.join;
+      if (name == 'join') return object.join;
+      if (name == 'toBool') return object.isNotEmpty;
+      if (name == 'isEmpty') return object.isEmpty;
+      if (name == 'isNotEmpty') return object.isNotEmpty;
+      if (name == 'last') return object.last;
+      if (name == 'first') return object.first;
+      if (name == 'contains') return object.contains;
+      if (name == 'getRange') {
+        return (int start, int end) => object.getRange(start, end).toList();
       }
+      if (name == 'reversed') return object.reversed.toList();
+      if (name == 'length') return () => object.length;
     }
+
+    if (object is Map) {
+      if (object.containsKey(expression.property.name)) {
+        return object[expression.property.name];
+      }
+      if (name == 'toBool') return object.isNotEmpty;
+      if (name == 'isEmpty') return object.isEmpty;
+      if (name == 'isNotEmpty') return object.isNotEmpty;
+      if (name == 'length') return () => object.length;
+    }
+
+    if (name == 'toString') return object.toString;
+
+    print("======== eval NULL ======= \n"
+        "expression: $expression\n"
+        "property.name: $name\n"
+        "object: $object\n"
+        "context: $context\n");
   }
 }
 
-extension YamlMapConverter on YamlMap {
-  dynamic _convertNode(dynamic v) {
-    if (v is YamlMap) {
-      return (v as YamlMap).toMap();
-    } else if (v is YamlList) {
-      var list = <dynamic>[];
-      for (var e in v) {
-        list.add(_convertNode(e));
-      }
-      return list;
-    } else {
-      return v;
-    }
-  }
-
-  Map<String, dynamic> toMap() {
-    var map = <String, dynamic>{};
-    nodes.forEach((k, v) {
-      map[(k as YamlScalar).value.toString()] = _convertNode(v.value);
-    });
-    return map;
-  }
+stringToDateTime(String dateString) {
+  // todo 模糊的日期转换
 }

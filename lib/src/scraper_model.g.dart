@@ -28,8 +28,6 @@ Selector _$SelectorFromJson(Map<String, dynamic> json) => Selector(
       parents: Selector._decodeParentsList(json['parents']),
       multiple: json['multiple'] as bool? ?? false,
       required: json['required'] as bool? ?? false,
-      valueType:
-          _$enumDecodeNullable(_$SelectorDataTypeEnumMap, json['valueType']),
       expressionContext: json['expressionContext'] as Map<String, dynamic>?,
       selector: json['selector'] as String?,
       attribute: json['attribute'] as String?,
@@ -51,7 +49,6 @@ Map<String, dynamic> _$SelectorToJson(Selector instance) => <String, dynamic>{
       'regex': instance.regex,
       'expression': instance.expression,
       'expressionContext': instance.expressionContext,
-      'valueType': _$SelectorDataTypeEnumMap[instance.valueType],
       'jsonAt': instance.jsonAt,
     };
 
@@ -98,13 +95,6 @@ const _$SelectorTypeEnumMap = {
   SelectorType.html: 'html',
   SelectorType.attribute: 'attribute',
   SelectorType.json: 'json',
-};
-
-const _$SelectorDataTypeEnumMap = {
-  SelectorDataType.string: 'string',
-  SelectorDataType.bool: 'bool',
-  SelectorDataType.int: 'int',
-  SelectorDataType.decimal: 'decimal',
 };
 
 Site _$SiteFromJson(Map<String, dynamic> json) => Site(
@@ -155,10 +145,7 @@ Scraper _$ScraperFromJson(Map<String, dynamic> json) => Scraper(
               ?.map((e) => Site.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      selectors: (json['selectors'] as List<dynamic>?)
-              ?.map((e) => Selector.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const [],
+      constants: json['constants'] as Map<String, dynamic>? ?? const {},
     );
 
 Map<String, dynamic> _$ScraperToJson(Scraper instance) => <String, dynamic>{
@@ -167,5 +154,5 @@ Map<String, dynamic> _$ScraperToJson(Scraper instance) => <String, dynamic>{
       'version': instance.version,
       'rules': instance.rules,
       'sites': instance.sites,
-      'selectors': instance.selectors,
+      'constants': instance.constants,
     };
