@@ -13,4 +13,9 @@ void main() {
   //     expect(awesome.isAwesome, isTrue);
   //   });
   // });
+
+  group('A group of tests', () {
+    test('First Test', () {});
+  });
+  
 }

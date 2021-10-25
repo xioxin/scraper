@@ -36,19 +36,17 @@ sites:
 rules:
   - matches: 
       - '^/(\?.*)?$'
+      - '^/uploader/\w+(\?.*)?$'
       - '^/(non-h|western|imageset|misc|artistcg|gamecg|cosplay|manga|doujinshi|asianporn|watched|popular|favorites\.php)(/\d+)?(\?.*)?$'
     type: html
     selectors:
       - id: count
         selector: p.ip
-        regex:
-          from: \D
-          flags: g
-          replace: ""
-        valueType: int
+        regex: (\D)
+        expression: $1.toInt()
       - id: currentPage
         selector: td.ptds a
-        valueType: int
+        expression: value.toInt()
       - id: displayMode
         type: element
         selector: "#dms option[selected]"
@@ -80,8 +78,8 @@ rules:
         - id: hasTorrents
           attribute: src
           selector: .gldown img
-          regex: \/t\.png
-          valueType: bool
+          regex: (\/t\.png)
+          expression: value.toBool()
 
         - id: tags
           multiple: true
@@ -105,8 +103,8 @@ rules:
 
         - id: pages
           selector: .gl4c div:nth-child(2), .glthumb > div:nth-child(2) > div:nth-child(2) > div:nth-child(2), td.gl2e > div > div > div:nth-child(5), .gl5t .ir + div
-          regex: \d+
-          valueType: int
+          regex: (\d+)
+          expression: value.toInt()
 
         - id: date
           selector: "[id^='posted_'] , .gl3e .cn + div, .gl5t .cs + div, .gl2m .glthumb + div"
@@ -183,6 +181,9 @@ rules:
         selector: "#gdo2 > div.ths.nosel"
       - id: currentPage
         selector: ".ptds"
+      - id: eventpane
+        type: html
+        selector: "#eventpane"
       - id: newer
         selector: "#gnd"
         children:
@@ -202,7 +203,6 @@ rules:
           - id: date
             regex: 'added ([0-9 -:]*)$'
             expression: $1.toDateTime()
-
       - id: wrapper
         type: element
         multiple: true
@@ -226,8 +226,8 @@ rules:
         children:
         - id: date
           selector: ".c2"
-          regex: 'Posted on (.*?) by:'
-          expression: $1
+          regex: 'Posted on (?<day>\d{1,2}) (?<month>\w+) (?<year>\d{4}), (?<hour>\d{1,2}):(?<minute>\d{1,2}) by'
+          expression: DateTime($year, $month, $day, $hour, $minute)
         - id: user
           selector: ".c2 a"
           children:

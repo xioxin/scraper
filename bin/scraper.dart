@@ -13,7 +13,6 @@ import 'package:uri/uri.dart';
 // dart bin/scraper.dart https://e-hentai.org/g/2029065/1e6df31ab8/
 // dart bin/scraper.dart https://e-hentai.org/g/2042088/a26bdd9ad0/
 
-
 void main(List<String> arguments) async {
   var fileUri =
       Uri.file(Platform.script.toFilePath()).resolve('../rules/eh.yaml');
@@ -28,8 +27,7 @@ void main(List<String> arguments) async {
 
   controller.addYamlRules(ruleFile.readAsStringSync());
   final parser = await controller.loadUri(Uri.parse(arguments.first));
-
-  print(JsonEncoder.withIndent('  ').convert(parser.parse()));
+  print(JsonEncoder.withIndent('  ', myEncode).convert(parser.parse()));
   dio.close();
 }
 
@@ -57,4 +55,11 @@ Dio getDio() {
 
   domainFronting.bind(dio);
   return dio;
+}
+
+dynamic myEncode(dynamic item) {
+  if (item is DateTime) {
+    return item.toIso8601String();
+  }
+  return item;
 }

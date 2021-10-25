@@ -179,6 +179,9 @@ class ScraperParser {
               final value = match.group(i);
               expressionRegexContext[r'$' + i.toString()] ??= value ?? '';
             }
+            match.groupNames.forEach((name) {
+              expressionRegexContext[r'$' + name] ??= match.namedGroup(name);
+            });
           }
         } else {
           value = value.replaceAllMapped(pattern, (Match match) {
@@ -221,6 +224,81 @@ class ScraperParser {
     return value;
   }
 
+  static safeInt(Object? v) {
+    if (v == null) return null;
+    return v is int ? v : int.tryParse(v.toString());
+  }
+
+  static DateTime? dataTimeParse(
+      [Object? year,
+      Object? month,
+      Object? day,
+      Object? hour,
+      Object? minute,
+      Object? second]) {
+    // 时间戳 timestamp Milliseconds
+
+    int? y, mo, d, h, mi, s;
+    final now = DateTime.now();
+
+    y = safeInt(year);
+    if (month is String) {
+      final monthMap = {
+        'january': 1,
+        'jan': 1,
+        'february': 2,
+        'feb': 2,
+        'march': 3,
+        'mar': 3,
+        'april': 4,
+        'apr': 4,
+        'may': 5,
+        'june': 6,
+        'jun': 6,
+        'july': 7,
+        'jul': 7,
+        'august': 8,
+        'aug': 8,
+        'september': 9,
+        'sept': 9,
+        'october': 10,
+        'oct': 10,
+        'november': 11,
+        'nov': 11,
+        'december': 12,
+        'dec': 12,
+      };
+      if (monthMap[month.toLowerCase()] != null) {
+        mo = monthMap[month.toLowerCase()];
+      }
+    }
+    mo ??= safeInt(month);
+    d = safeInt(day);
+    h = safeInt(hour);
+    mi = safeInt(minute);
+    s = safeInt(second);
+
+    // 只有 y 有值,且大于等于1000 认为是时间戳
+    if (y != null &&
+        mo == null &&
+        d == null &&
+        h == null &&
+        mi == null &&
+        s == null &&
+        y >= 10000) {
+      return DateTime.fromMillisecondsSinceEpoch(y);
+    }
+
+    // 有月日 但是没有年, 默认为今年
+    mo ??= now.month;
+    d ??= now.day;
+    y ??= now.year;
+    h ??= 0;
+    mi ??= 0;
+    s ??= 0;
+    return DateTime(y, mo, d, h, mi, s);
+  }
+
   Map<String, dynamic> get expressionFunctions {
     return {
       "document": windowController.window!.document,
@@ -242,6 +320,7 @@ class ScraperParser {
         return (Map<String, Object?> data) =>
             UriTemplate(uriTemplate).expand(data);
       },
+      "DateTime": dataTimeParse,
       ...scraper.constants,
     };
   }
