@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/xioxin/scraper/main/schema/v1/scraper.json",
+  "$schema": "https://cdn.jsdelivr.net/gh/xioxin/scraper/schema/v1/scraper.json",
   "name": "E-Hentai",
   "description": "Parsing rules for an \"E-Hentai\" website",
   "version": "1.0.0",
