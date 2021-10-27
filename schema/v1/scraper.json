@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JSON Schema for Scraper",
+  "description": "JSON Schema for Scraper",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "sites",
+    "description",
+    "rules",
+    "version"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "httpClient": {
+      "$ref": "#/definitions/httpClient"
+    },
+    "constants": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "version": {
+      "type": "string",
+      "description": "version"
+    },
+    "sites": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/site"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/rule"
+      }
+    }
+  },
+  "definitions": {
+    "httpClient": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "headers": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host"
+      ],
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "authRequired": {
+          "type": "boolean"
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "matches": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "html",
+            "json"
+          ]
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/selector"
+          }
+        }
+      }
+    },
+    "regex": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pattern": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string"
+        },
+        "replace": {
+          "type": "string"
+        }
+      }
+    },
+    "regexOrString": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/definitions/regex"
+        }
+      ]
+    },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "element",
+            "text",
+            "html",
+            "attribute",
+            "json",
+            "value"
+          ]
+        },
+        "value": {},
+        "id": {
+          "type": "string"
+        },
+        "selector": {
+          "type": "string"
+        },
+        "regex": {
+          "$ref": "#/definitions/regexOrString"
+        },
+        "expression": {
+          "type": "string"
+        },
+        "attribute": {
+          "type": "string"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/selector"
+          }
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

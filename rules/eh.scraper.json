@@ -1,0 +1,393 @@
+{
+  "$schema": "/Users/zhaoxin/Documents/project-test/scraper/schema/v1/scraper.json#",
+  "name": "E-Hentai",
+  "description": "Parsing rules for an \"E-Hentai\" website",
+  "version": "1.0.0",
+  "constants": {
+    "nsDic": {
+      "misc": "misc",
+      "miscellaneous": "misc",
+      "r": "reclass",
+      "reclass": "reclass",
+      "l": "language",
+      "language": "language",
+      "lang": "language",
+      "p": "parody",
+      "parody": "parody",
+      "series": "parody",
+      "c": "character",
+      "char": "character",
+      "character": "character",
+      "g": "group",
+      "group": "group",
+      "creator": "group",
+      "circle": "group",
+      "a": "artist",
+      "artist": "artist",
+      "m": "male",
+      "male": "male",
+      "f": "female",
+      "female": "female"
+    }
+  },
+  "sites": [
+    {
+      "host": "e-hentai.org"
+    },
+    {
+      "host": "exhentai.org"
+    }
+  ],
+  "rules": [
+    {
+      "matches": [
+        "^/(\\?.*)?$",
+        "^/uploader/\\w+(\\?.*)?$",
+        "^/(non-h|western|imageset|misc|artistcg|gamecg|cosplay|manga|doujinshi|asianporn|watched|popular|favorites\\.php)(/\\d+)?(\\?.*)?$"
+      ],
+      "type": "html",
+      "selectors": [
+        {
+          "id": "count",
+          "selector": "p.ip",
+          "regex": "(\\D)",
+          "expression": "$1.toInt()"
+        },
+        {
+          "id": "currentPage",
+          "selector": "td.ptds a",
+          "expression": "value.toInt()"
+        },
+        {
+          "id": "displayMode",
+          "type": "element",
+          "selector": "#dms option[selected]",
+          "children": [
+            {
+              "id": "name"
+            },
+            {
+              "id": "value",
+              "attribute": "value"
+            }
+          ]
+        },
+        {
+          "id": "items",
+          "type": "element",
+          "multiple": true,
+          "selector": "table.itg tr, div.itg > .gl1t",
+          "children": [
+            {
+              "id": "category",
+              "selector": ".cn, .cs"
+            },
+            {
+              "id": "title",
+              "required": true,
+              "selector": ".glink"
+            },
+            {
+              "id": "href",
+              "required": true,
+              "selector": ".gl1e a, .glname a, .gl1t > a",
+              "attribute": "href"
+            },
+            {
+              "id": "cover",
+              "selector": ".glthumb img",
+              "attribute": "data-src"
+            },
+            {
+              "id": "cover",
+              "selector": ".gl1e a img, .gl1t .gl3t a img",
+              "attribute": "src"
+            },
+            {
+              "id": "hasTorrents",
+              "attribute": "src",
+              "selector": ".gldown img",
+              "regex": "(\\/t\\.png)",
+              "expression": "value.toBool()"
+            },
+            {
+              "id": "tags",
+              "multiple": true,
+              "selector": ".gt, .gtl, gtw",
+              "attribute": "title"
+            },
+            {
+              "id": "ratings",
+              "selector": ".ir",
+              "attribute": "style",
+              "regex": "background-position:-?(\\d+)px -(\\d+)px;.*",
+              "expression": "( 5 - $1.toInt / 16) - ($2.toInt > 1 ? 0.5 : 0)"
+            },
+            {
+              "id": "uploader",
+              "type": "element",
+              "selector": ".gl4c a, .gl5m a, .gl3e .ir + div a",
+              "children": [
+                {
+                  "id": "name"
+                },
+                {
+                  "id": "href",
+                  "attribute": "href"
+                }
+              ]
+            },
+            {
+              "id": "pages",
+              "selector": ".gl4c div:nth-child(2), .glthumb > div:nth-child(2) > div:nth-child(2) > div:nth-child(2), td.gl2e > div > div > div:nth-child(5), .gl5t .ir + div",
+              "regex": "(\\d+)",
+              "expression": "value.toInt()"
+            },
+            {
+              "id": "date",
+              "selector": "[id^='posted_'] , .gl3e .cn + div, .gl5t .cs + div, .gl2m .glthumb + div"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "matches": [
+        "^/g/(\\d+)/(\\w+)/$"
+      ],
+      "type": "html",
+      "selectors": [
+        {
+          "id": "title",
+          "selector": "#gn"
+        },
+        {
+          "id": "sub_title",
+          "selector": "#gj"
+        },
+        {
+          "id": "category",
+          "selector": "#gdc"
+        },
+        {
+          "id": "cover",
+          "selector": "#gd1>div",
+          "attribute": "style",
+          "regex": "url\\((.*?)\\)",
+          "expression": "$1"
+        },
+        {
+          "id": "uploader",
+          "selector": "#gdn > a:nth-child(1)",
+          "children": [
+            {
+              "id": "name"
+            },
+            {
+              "id": "href",
+              "attribute": "href"
+            }
+          ]
+        },
+        {
+          "id": "visible",
+          "selector": "#gdd > table > tbody > tr:nth-child(3) > td.gdt2"
+        },
+        {
+          "id": "language",
+          "selector": "#gdd > table > tbody > tr:nth-child(4) > td.gdt2",
+          "regex": "^(.*) ",
+          "expression": "$1"
+        },
+        {
+          "id": "readingDirection",
+          "selector": "#gdd > table > tbody > tr:nth-child(4) > td.gdt2",
+          "regex": "^(\\w+?)\\s+(\\w+?)$",
+          "expression": "$2"
+        },
+        {
+          "id": "fileSize",
+          "selector": "#gdd > table > tbody > tr:nth-child(5) > td.gdt2"
+        },
+        {
+          "id": "parent",
+          "type": "element",
+          "selector": "#gdd > table > tbody > tr:nth-child(2) > td.gdt2 > a",
+          "children": [
+            {
+              "id": "name"
+            },
+            {
+              "id": "href",
+              "attribute": "href"
+            }
+          ]
+        },
+        {
+          "id": "length",
+          "selector": "#gdd > table > tbody > tr:nth-child(6) > td.gdt2",
+          "regex": "([0-9]+)",
+          "expression": "$1.toInt()"
+        },
+        {
+          "id": "favcount",
+          "selector": "#favcount",
+          "regex": "([0-9]+)",
+          "expression": "$1.toInt()"
+        },
+        {
+          "id": "rating",
+          "selector": "#rating_label",
+          "regex": "([0-9\\.]+)",
+          "expression": "$1.toDouble()"
+        },
+        {
+          "id": "tags",
+          "multiple": true,
+          "selector": ".gt, .gtl, gtw",
+          "children": [
+            {
+              "id": "raw",
+              "attribute": "id",
+              "regex": "t[ad]_(.*)",
+              "expression": "$1"
+            },
+            {
+              "id": "namespace",
+              "expression": "this.raw.contains() ? nsDic[this.raw.split(':')[0]] : 'misc'"
+            },
+            {
+              "id": "key",
+              "expression": "this.raw.contains(':') ? this.raw.split(':')[1] : this.raw"
+            }
+          ]
+        },
+        {
+          "id": "torrent",
+          "selector": "#gd5 > p:nth-child(3) > a",
+          "attribute": "id"
+        },
+        {
+          "id": "coverSizeMode",
+          "selector": "#gdo4 > div.ths.nosel"
+        },
+        {
+          "id": "coverRowsMode",
+          "selector": "#gdo2 > div.ths.nosel"
+        },
+        {
+          "id": "currentPage",
+          "selector": ".ptds"
+        },
+        {
+          "id": "eventpane",
+          "type": "html",
+          "selector": "#eventpane"
+        },
+        {
+          "id": "newer",
+          "selector": "#gnd",
+          "children": [
+            {
+              "id": "title",
+              "multiple": true,
+              "selector": "a",
+              "children": [
+                {
+                  "id": "v"
+                }
+              ],
+              "expression": "value.last.v"
+            },
+            {
+              "id": "href",
+              "multiple": true,
+              "selector": "a",
+              "children": [
+                {
+                  "id": "v",
+                  "attribute": "href"
+                }
+              ],
+              "expression": "value.last.v"
+            },
+            {
+              "id": "date",
+              "regex": "added ([0-9 -:]*)$",
+              "expression": "$1.toDateTime()"
+            }
+          ]
+        },
+        {
+          "id": "wrapper",
+          "type": "element",
+          "multiple": true,
+          "selector": "#gdt a",
+          "children": [
+            {
+              "id": "href",
+              "attribute": "href"
+            },
+            {
+              "id": "cover",
+              "selector": "img",
+              "attribute": "src"
+            },
+            {
+              "id": "title",
+              "selector": "img",
+              "attribute": "title"
+            },
+            {
+              "id": "alt",
+              "selector": "img",
+              "attribute": "alt"
+            }
+          ]
+        },
+        {
+          "id": "comment",
+          "type": "element",
+          "multiple": true,
+          "selector": "#cdiv .c1",
+          "children": [
+            {
+              "id": "date",
+              "selector": ".c2",
+              "regex": "Posted on (?<day>\\d{1,2}) (?<month>\\w+) (?<year>\\d{4}), (?<hour>\\d{1,2}):(?<minute>\\d{1,2}) by",
+              "expression": "DateTime($year, $month, $day, $hour, $minute)"
+            },
+            {
+              "id": "user",
+              "selector": ".c2 a",
+              "children": [
+                {
+                  "id": "name"
+                },
+                {
+                  "id": "href",
+                  "attribute": "href"
+                }
+              ]
+            },
+            {
+              "id": "isUploader",
+              "selector": ".c4",
+              "expression": "value == \"Uploader Comment\""
+            },
+            {
+              "id": "score",
+              "selector": ".c5 span",
+              "expression": "value.toInt()"
+            },
+            {
+              "id": "content",
+              "type": "html",
+              "selector": ".c6"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
