@@ -1,5 +1,5 @@
 {
-  // "yaml.schemas": {
-  //   "/Users/zhaoxin/Documents/project-test/scraper/schema/v1/scraper.json": "*.scraper.yaml"
-  // },
+  "yaml.schemas": {
+    "https://cdn.jsdelivr.net/gh/xioxin/scraper/schema/v1/scraper.json": "*.scraper.yaml"
+  },
 }
