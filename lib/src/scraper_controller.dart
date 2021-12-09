@@ -8,13 +8,16 @@ import 'package:collection/collection.dart';
 import 'scraper_parser.dart';
 
 typedef ScraperRequestFunc = Future<String> Function(
-    ScraperController controller, Scraper scraper, Uri uri);
+    ScraperController controller,
+    Scraper scraper,
+    Uri uri,
+    Map<String, dynamic>? extra);
 
 class ScraperController {
   ScraperRequestFunc request;
 
-  static Future<String> defaultRequest(
-      ScraperController controller, Scraper scraper, Uri uri) async {
+  static Future<String> defaultRequest(ScraperController controller,
+      Scraper scraper, Uri uri, Map<String, dynamic>? extra) async {
     final httpClient = HttpClient();
     try {
       final request = await httpClient.getUrl(uri);
@@ -46,7 +49,7 @@ class ScraperController {
     scraperList.add(scraper);
   }
 
-  Future<ScraperParser> loadUri(Uri uri) async {
+  Future<ScraperParser> loadUri(Uri uri, [Map<String, dynamic>? extra]) async {
     final scraper = scraperList.firstWhereOrNull((item) =>
         item.sites.firstWhereOrNull((site) => site.host == uri.host) != null);
     if (scraper == null) {
@@ -54,7 +57,10 @@ class ScraperController {
     }
     final rule = scraper.rules.firstWhereOrNull((rule) =>
         rule.matches.firstWhereOrNull((e) {
-          final url = uri.path + uri.query;
+          String url = uri.path;
+          if (uri.query != '') {
+            url += '?' + uri.query;
+          }
           return e.pattern.hasMatch(url);
         }) !=
         null);
@@ -63,7 +69,7 @@ class ScraperController {
       throw "There are no supported rules. url: ${uri.toString()}";
     }
 
-    final text = await request(this, scraper, uri);
+    final text = await request(this, scraper, uri, extra);
     return ScraperParser(this, scraper, rule, text);
   }
 }

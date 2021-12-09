@@ -20,6 +20,8 @@ class ScraperParser {
   final Map<String, dynamic> variable;
   List<Selector> selectorList = [];
 
+  Duration? parsingTime;
+
   ScraperParser(this.scraperController, this.scraper, this.rule, this.data,
       {this.variable = const {}}) {
     selectorList = rule.selectors ?? [];
@@ -31,14 +33,17 @@ class ScraperParser {
   }
 
   Map<String, dynamic>? parse() {
+    final startTime = DateTime.now();
     final rootId = rule.selectorRoot;
     if (rule.type == RuleDataType.html) {
       assert(windowController.window?.document.documentElement != null);
       final rootSelector = selectorList
           .where((e) => e.parents?.contains(rootId) ?? rootId == null)
           .toList();
-      return parseElementMap(
+      final data = parseElementMap(
           windowController.window!.document.documentElement!, rootSelector);
+      parsingTime = DateTime.now().difference(startTime);
+      return data;
     } else if (rule.type == RuleDataType.json) {
       return parseJson(rootId: rootId);
     }
