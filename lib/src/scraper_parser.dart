@@ -345,7 +345,9 @@ class SelectorEvaluator extends ExpressionEvaluator {
       if (name == 'split') return object.split;
       if (name == 'trim') return object.trim;
       if (name == 'contains') return object.contains;
-      if (name == 'toInt') return () => int.tryParse(object);
+      if (name == 'toInt') {
+        return () => int.tryParse(object.replaceAll(',', ''));
+      }
       if (name == 'toDouble') return () => double.tryParse(object);
       if (name == 'toBool') return () => object.trim() != '';
       if (name == 'isEmpty') return object.isEmpty;
